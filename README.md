@@ -117,4 +117,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-<p align="center">Made with ❤️ for the Fasting Community</p>
+<p align="center">Made with ❤️ BY OPH</p>
