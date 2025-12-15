@@ -21,7 +21,7 @@ git commit -m "Initial release of Fasting Pro"
 Copy the commands GitHub shows you (replace `YOUR_USER`):
 
 ```powershell
-git remote add origin https://github.com/YOUR_USER/fasting-app.git
+git remote add origin https://github.com/op-h/fasting-app.git
 git branch -M main
 git push -u origin main
 ```
