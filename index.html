@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Fasting Tracker</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            emerald: {
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+            },
+            slate: {
+              800: '#1e293b',
+              900: '#0f172a',
+            }
+          },
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body
+  class="bg-slate-900 text-white h-screen flex flex-col overflow-hidden selection:bg-emerald-500 selection:text-white">
+
+  <!-- Top Bar -->
+  <header
+    class="fixed top-0 left-0 right-0 z-50 px-6 py-4 glass-panel border-b border-white/5 mx-0 mt-0 rounded-none shadow-xl">
+    <div class="max-w-xl mx-auto flex justify-between items-center">
+      <div class="flex flex-col">
+        <h1 class="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
+          <i class="fas fa-bolt text-emerald-400"></i> Fasting<span class="text-emerald-400">Pro</span>
+        </h1>
+        <p class="text-[10px] font-medium text-slate-400 uppercase tracking-widest" id="current-date">Today</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div
+          class="glass px-3 py-1.5 rounded-full flex items-center gap-2 border border-emerald-500/20 bg-emerald-500/5">
+          <i class="fas fa-fire text-orange-400 animate-pulse text-xs"></i>
+          <span class="text-sm font-bold text-white tabular-nums" id="streak-count">0</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 relative overflow-y-auto no-scrollbar p-6 pb-40 max-w-xl mx-auto w-full pt-24">
+
+    <!-- DASHBOARD VIEW -->
+    <div id="view-dashboard" class="fade-enter">
+      <!-- Timer Circle -->
+      <div id="timer-container" class="relative w-72 h-72 mx-auto mt-8 mb-10 flex items-center justify-center">
+        <!-- Decorative Glow -->
+        <div class="absolute inset-0 bg-emerald-500/10 rounded-full blur-3xl"></div>
+
+        <!-- SVG Ring -->
+        <svg class="w-full h-full transform -rotate-90 relative z-10 drop-shadow-2xl" viewBox="0 0 100 100">
+          <!-- Background Circle -->
+          <circle cx="50" cy="50" r="45" stroke="rgba(255,255,255,0.05)" stroke-width="8" fill="transparent" />
+          <!-- Progress Circle -->
+          <circle class="timer-ring-circle" cx="50" cy="50" r="45" stroke="#10b981" stroke-width="8" fill="transparent"
+            stroke-dasharray="282.7" stroke-dashoffset="282.7" stroke-linecap="round" />
+        </svg>
+
+        <!-- Center Content -->
+        <div class="absolute inset-0 flex flex-col items-center justify-center z-20">
+          <p id="status-text" class="text-sm font-medium tracking-widest uppercase text-slate-400 mb-2">Ready</p>
+          <h2 id="timer-display" class="text-5xl font-bold tabular-nums tracking-tight text-white mb-2">00:00:00</h2>
+          <p id="timer-subtext" class="text-xs text-slate-500 max-w-[150px] text-center">Select a protocol to start</p>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="space-y-4 max-w-sm mx-auto mb-8">
+
+        <!-- Start Controls -->
+        <div id="controls-start" class="w-full space-y-4">
+          <div class="relative">
+            <select id="fast-protocol"
+              class="w-full bg-slate-800/80 border border-slate-700 text-white p-4 rounded-xl appearance-none focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer">
+              <option value="16">16:8 (Beginner)</option>
+              <option value="18">18:6 (Intermediate)</option>
+              <option value="20">20:4 (Warrior)</option>
+              <option value="23">23:1 (OMAD)</option>
+              <option value="custom" class="font-bold text-emerald-400">✨ Custom Duration</option>
+            </select>
+            <div class="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-slate-400">
+              <i class="fas fa-chevron-down"></i>
+            </div>
+          </div>
+
+          <button id="btn-start-fast"
+            class="w-full btn-press bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2">
+            <i class="fas fa-play text-sm"></i>
+            Start Fast
+          </button>
+        </div>
+
+        <!-- End Controls -->
+        <div id="controls-end" class="w-full hidden space-y-3">
+          <button id="btn-end-fast"
+            class="w-full btn-press bg-slate-800 border border-slate-700 text-red-400 font-bold py-4 rounded-xl hover:bg-slate-700 hover:border-red-500/30 transition-all flex items-center justify-center gap-2">
+            <i class="fas fa-stop text-sm"></i>
+            End Fast
+          </button>
+          <button id="btn-edit-start"
+            class="w-full btn-press text-slate-500 hover:text-white text-sm py-2 transition-colors">
+            <i class="fas fa-edit mr-1"></i> Edit Start Time
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Body Status Card (Pro) -->
+      <div id="body-status-card"
+        class="relative overflow-hidden glass rounded-3xl p-6 mb-6 transform transition hover:scale-[1.01] group border-t border-white/10">
+        <!-- Ambient BG in Card -->
+        <div
+          class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none group-hover:bg-blue-500/20 transition-all duration-500">
+        </div>
+
+        <div class="relative z-10 flex items-center gap-5">
+          <div
+            class="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center shadow-lg group-hover:shadow-blue-500/20 transition-all border border-slate-700">
+            <i class="fas fa-dna text-blue-400 text-xl group-hover:scale-110 transition-transform"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-lg">Body Status</h3>
+            <p id="body-status-title" class="text-xs font-bold uppercase tracking-wide text-blue-400 mb-0.5">Ready</p>
+            <p id="body-status-desc" class="text-xs text-slate-400 leading-tight pr-4">
+              Start fasting to see what's happening inside your body!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hydration Tracker (Pro) -->
+      <div class="glass rounded-2xl p-6 mb-24">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <h3 class="font-bold text-white mb-1"><i class="fas fa-glass-water text-blue-400 mr-2"></i>Hydration</h3>
+            <p class="text-xs text-slate-400">Daily Goal: 2000ml</p>
+          </div>
+          <div class="text-right">
+            <span id="water-count" class="text-2xl font-bold text-blue-400">0</span>
+            <span class="text-xs text-blue-400/70 block">ml consumed</span>
+          </div>
+        </div>
+
+        <!-- Water Controls -->
+        <div class="flex items-center gap-4 bg-slate-800/50 rounded-xl p-2">
+          <button id="btn-remove-water"
+            class="w-12 h-12 rounded-lg bg-slate-700/50 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition flex items-center justify-center">
+            <i class="fas fa-minus"></i>
+          </button>
+
+          <div class="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden relative">
+            <!-- Progress Bar -->
+            <div id="water-progress-bar" class="absolute top-0 left-0 h-full bg-blue-500 transition-all duration-500"
+              style="width: 0%"></div>
+          </div>
+
+          <button id="btn-add-water"
+            class="w-12 h-12 rounded-lg bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/30 transition flex items-center justify-center">
+            <i class="fas fa-plus"></i>
+            <span class="text-[10px] absolute mt-8 text-blue-200 font-medium">+200</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESS VIEW -->
+    <div id="view-progress" class="hidden animate-fade-in">
+      <h2 class="text-2xl font-bold text-white mb-6">Your Progress</h2>
+
+      <!-- Weight Log (Pro) -->
+      <div class="glass rounded-2xl p-6 mb-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="font-bold text-white flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+              <i class="fas fa-weight-scale text-emerald-500 text-sm"></i>
+            </div>
+            Weight Log
+          </h3>
+          <span
+            class="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
+            Current: <span id="current-weight-display">--</span>
+          </span>
+        </div>
+
+        <div class="relative h-64 w-full mb-6">
+          <canvas id="weightChart"></canvas>
+        </div>
+
+        <div class="flex gap-3 items-stretch">
+          <div class="relative flex-1 group">
+            <input type="number" id="weight-input" step="0.1" placeholder=" "
+              class="peer w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 pt-5 pb-2 text-white outline-none focus:border-emerald-500 transition-all font-bold text-lg">
+            <label
+              class="absolute left-4 top-2 text-[10px] text-slate-500 uppercase tracking-wider font-bold peer-placeholder-shown:text-base peer-placeholder-shown:top-3.5 peer-placeholder-shown:font-normal peer-focus:text-[10px] peer-focus:top-2 peer-focus:text-emerald-500 transition-all cursor-text"
+              for="weight-input">New Weight</label>
+          </div>
+          <button id="btn-log-weight"
+            class="bg-emerald-500 hover:bg-emerald-400 text-white px-6 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex flex-col items-center justify-center min-w-[80px]">
+            <i class="fas fa-check text-xl mb-0.5"></i>
+            <span class="text-[10px]">SAVE</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Badges Section -->
+      <div class="glass rounded-2xl p-6 mb-6">
+        <h3 class="font-bold text-white mb-4"><i class="fas fa-medal text-yellow-400 mr-2"></i>Achievements</h3>
+        <div id="badges-grid" class="grid grid-cols-4 gap-2">
+          <!-- Grid -->
+        </div>
+      </div>
+
+      <!-- Data Management (Pro) -->
+      <div class="glass rounded-2xl p-6">
+        <h3 class="font-bold text-white mb-4 flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+            <i class="fas fa-database text-blue-400 text-sm"></i>
+          </div>
+          Data Safe
+        </h3>
+        <div class="flex gap-4">
+          <button id="btn-export-data"
+            class="flex-1 bg-slate-800 border border-slate-700 hover:border-emerald-500/50 hover:bg-slate-700/50 text-white py-4 rounded-xl font-bold transition-all group flex flex-col items-center justify-center gap-2">
+            <i
+              class="fas fa-cloud-download-alt text-xl text-slate-400 group-hover:text-emerald-400 transition-colors"></i>
+            <span class="text-xs uppercase tracking-wider text-slate-400 group-hover:text-white">Backup</span>
+          </button>
+
+          <button id="btn-import-data"
+            class="flex-1 bg-slate-800 border border-slate-700 hover:border-blue-500/50 hover:bg-slate-700/50 text-white py-4 rounded-xl font-bold transition-all group flex flex-col items-center justify-center gap-2">
+            <i class="fas fa-cloud-upload-alt text-xl text-slate-400 group-hover:text-blue-400 transition-colors"></i>
+            <span class="text-xs uppercase tracking-wider text-slate-400 group-hover:text-white">Restore</span>
+          </button>
+        </div>
+        <input type="file" id="file-import" class="hidden" accept=".json">
+      </div>
+    </div>
+
+    <!-- HISTORY VIEW -->
+    <div id="view-history" class="hidden fade-enter">
+      <h2 class="text-2xl font-bold mb-6">History</h2>
+      <div id="history-list" class="space-y-3 pb-4">
+        <!-- JS will populate -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="fixed bottom-0 left-0 right-0 glass-panel border-t border-white/5 pb-safe pt-2 px-6">
+    <div class="flex justify-around items-center h-16 max-w-lg mx-auto">
+      <button id="nav-dashboard" class="flex flex-col items-center gap-1 text-emerald-400 w-16 transition-colors">
+        <i class="fas fa-clock text-xl mb-0.5"></i>
+        <span class="text-[10px] font-medium tracking-wide">Timers</span>
+      </button>
+      <button id="nav-progress"
+        class="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-400/70 w-16 transition-colors">
+        <i class="fas fa-chart-line text-xl mb-0.5"></i>
+        <span class="text-[10px] font-medium tracking-wide">Progress</span>
+      </button>
+      <button id="nav-history"
+        class="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-400/70 w-16 transition-colors">
+        <i class="fas fa-history text-xl mb-0.5"></i>
+        <span class="text-[10px] font-medium tracking-wide">History</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Safe Area Padding for iPhone Home Bar -->
+  <style>
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+  </style>
+
+  <script type="module" src="js/main.js?v=2"></script>
+  <script>
+    // Set date
+    document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+    // Service Worker Reg
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(() => console.log('SW Registered'))
+        .catch(console.error);
+    }
+  </script>
+</body>
+
+</html>
